@@ -1,0 +1,9 @@
+node_modules/
+.wrangler
+dist/
+dev.db
+.git
+*.log
+.env
+.env.production
+.dev.vars

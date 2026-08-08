@@ -2,7 +2,7 @@
 
 ## Requisitos
 
-- Node.js 20+
+- Node.js 24+
 - npm
 - Cuenta de Cloudflare (para `deploy` y migraciones remotas)
 
