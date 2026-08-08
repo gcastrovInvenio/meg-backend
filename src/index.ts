@@ -37,8 +37,8 @@ const pingRoute = createRoute({
 
 app.openapi(pingRoute, (c) => c.text("Connected!", 200));
 
-app.route("", auth);
-app.route("", users);
+app.route("/", auth);
+app.route("/", users);
 
 app.doc("/doc", {
 	openapi: "3.0.3",
