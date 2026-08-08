@@ -52,3 +52,4 @@
 
 Para ver la documentación abre directamente:
   http://localhost:5173/docs
+Después de ejecutar el anterior comando
