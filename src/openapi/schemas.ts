@@ -104,3 +104,38 @@ export const IdParamsSchema = z.object({
 			description: "ID del usuario",
 		}),
 });
+
+export const ActualizarPerfilSchema = z
+	.object({
+		nombre_completo: z
+			.string({ error: "Falta el campo nombre_completo" })
+			.trim()
+			.min(1, "Falta el campo nombre_completo")
+			.optional(),
+		telefono: z.string().trim().nullish(),
+	})
+	.superRefine((val, ctx) => {
+		if (val.nombre_completo === undefined && val.telefono === undefined) {
+			ctx.addIssue({
+				code: "custom",
+				message:
+					"Debe enviar al menos un campo editable (nombre_completo o telefono)",
+			});
+		}
+	})
+	.openapi("ActualizarPerfil", {
+		description: "Campos editables del perfil de usuario",
+	});
+
+export const CambioContrasenaSchema = z
+	.object({
+		contrasena_actual: z
+			.string({ error: "Falta el campo contrasena_actual" })
+			.min(1, "Falta el campo contrasena_actual"),
+		contrasena_nueva: z
+			.string({ error: "Falta el campo contrasena_nueva" })
+			.min(8, "La contraseña debe tener al menos 8 caracteres"),
+	})
+	.openapi("CambioContrasena", {
+		description: "Cambio de contraseña del usuario",
+	});

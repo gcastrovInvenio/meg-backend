@@ -355,7 +355,7 @@ auth.openapi({ ...meRoute, middleware: requireAuth }, async (c) => {
 	if (!usuario) {
 		return fail(c, 404, "Usuario no encontrado");
 	}
-	return c.json({ usuario: usuarioPublico(usuario) });
+	return c.json({ usuario: usuarioPublico(usuario) }, 200);
 });
 
 export default auth;

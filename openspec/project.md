@@ -150,3 +150,55 @@ Fuera de alcance para el MVP (fase 2+): cupones avanzados, búsqueda con IA, not
 ## 8. Referencias del modelo de datos
 
 El detalle completo de entidades, relaciones y enumeraciones se encuentra definido en `schema.prisma` (proveedor SQLite), el cual debe considerarse la fuente de verdad para el diseño de la API y las validaciones de negocio.
+
+## 9. Stack tecnológico confirmado
+
+| Capa | Tecnología | Detalles |
+|---|---|---|
+| Runtime / Deploy | **Cloudflare Workers** | Wrangler 4, `compatibility_flags: ["nodejs_compat"]`, config en `wrangler.jsonc` |
+| Dev / Build | **Vite 8** + `@cloudflare/vite-plugin` | `npm run dev`, `npm run build`, `npm run deploy` |
+| Framework API | **Hono 4** (`OpenAPIHono`) + `@hono/zod-openapi` | REST con OpenAPI 3.0.3 generado automáticamente (`/doc`) y Swagger UI en `/docs` |
+| ORM / Modelado | **Prisma 7** | Generador `prisma-client` con salida en `prisma/prisma/`; datasource `sqlite`; migraciones en `prisma/migrations/` |
+| Base de datos | SQLite (desarrollo, `dev.db`) / **Cloudflare D1** (producción) | Acceso vía `@prisma/adapter-d1` con binding `DB` |
+| Validación | **Zod 4** | Schemas con `zod-openapi` en `src/openapi/schemas.ts` |
+| Autenticación | JWT **HS256** (`hono/jwt`) + PBKDF2-SHA256 (Web Crypto) | Access token corto (`JWT_EXPIRES_IN`) + refresh token rotativo almacenado en `Sesion`; hash en `src/lib/password.ts` |
+| Tests | **Vitest 4** | `npm test`, archivos `*.test.ts` junto al código |
+| Lint / Format | **Biome 2** | Tabs, comillas dobles, preset `recommended`; `npm run lint` |
+| Lenguaje | **TypeScript** (ESM) | `"type": "module"`, bindings tipados de Worker |
+
+## 10. Arquitectura y convenciones de código
+
+### Estructura de carpetas (organización por dominios)
+
+```
+src/
+  index.ts        # app principal (OpenAPIHono), middleware global y registro de rutas
+  types.ts        # AppEnv (bindings) y AppVariables (userId, db)
+  auth/           # módulo de autenticación (router, middleware, test-utils, tests)
+  users/          # módulo de usuarios (router, model)
+  lib/            # utilidades compartidas (db, password, tokens, encoding)
+  openapi/        # schemas zod-openapi compartidos (schemas.ts)
+  test/           # helpers de test (test-env.ts)
+prisma/
+  schema.prisma   # fuente de verdad del modelo de datos
+  migrations/     # migraciones D1/SQLite
+  prisma/         # cliente generado (no editar a mano)
+```
+
+### Convenciones
+
+- **Rutas declarativas:** cada endpoint se define con `createRoute()` (método, path, tags, summary, description, request/response) y se registra con `router.openapi(route, handler)`.
+- **Schemas:** entradas y salidas con `zod-openapi`, nombrados con `.openapi("Nombre", {...})` y agrupados en `src/openapi/schemas.ts`.
+- **Errores:** respuestas JSON `{ "error": "mensaje en español" }`. El `defaultHook` de cada router valida el body/params y devuelve 400 con el primer mensaje de Zod. El resto usa el helper `fail(c, status, error, extra?)`.
+- **Acceso a datos:** la instancia de Prisma se inyecta por request con `c.set("db", createPrisma(c.env.DB))` en `src/index.ts` y se lee con `c.get("db")`.
+- **Tipos de entorno:** bindings y variables tipados en `src/types.ts` (`AppEnv`: `DB`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `REFRESH_TOKEN_TTL`; `AppVariables`: `userId`, `db`).
+- **Naming:** campos de BD en `snake_case`; payloads de API en `camelCase` (p.ej. `accessToken`, `refreshToken`, `expiraEn`); respuestas envueltas (`{ usuario: ... }`, `{ mensaje: ... }`).
+- **Endpoints protegidos:** usan `security: [{ Bearer: [] }]` en la ruta más el middleware `requireAuth` (`src/auth/middleware.ts`).
+- **Tests:** unitarios con Vitest mockeando Prisma (`makeDb`/`makeApp` en `test-utils.ts`) y probando vía `app.request(...)`; viven junto al código (`router.test.ts`, `middleware.test.ts`).
+- **Idioma:** todo el texto visible al usuario y las descripciones OpenAPI van en español.
+- **Comandos:** `npm run dev` (vite), `npm test` (vitest run), `npm run lint` (biome check .), `npm run deploy` (build + wrangler deploy), `npm run cloudflare-db-local` / `cloudflare-db-remote` (migraciones D1).
+
+## 11. Estado de implementación
+
+- **Implementado:** autenticación completa (register, login, refresh, logout, me), consulta de usuarios por ID, endpoint `/ping` y documentación OpenAPI/Swagger.
+- **Por implementar:** el resto de módulos (negocios/KYC, catálogo, pedidos, pagos, cupones, reseñas, mensajería, notificaciones, reclamos, auditoría), a partir de los deltas definidos en `openspec/specs`.
