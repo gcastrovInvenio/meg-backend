@@ -8,7 +8,9 @@
 		{
 			"binding": "DB",
 			"database_name": "meg",
-			"database_id": "dev-local"
+			"database_id": "dev-local",
+			"migrations_dir": "prisma/migrations",
+			"migrations_pattern": "prisma/migrations/*/migration.sql"
 		}
 	],
 	"vars": {
