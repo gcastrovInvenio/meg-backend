@@ -1,0 +1,503 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "./prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum EstadoKyc {
+  Pendiente
+  Aprobado
+  Rechazado
+}
+
+enum TipoItem {
+  Producto
+  Servicio
+}
+
+enum EstadoSolicitud {
+  Pendiente
+  Aceptada
+  Completada
+  Cancelada
+}
+
+enum EstadoTransaccion {
+  Pendiente
+  Completado
+  Fallido
+  Reembolsado
+}
+
+enum EstadoPedido {
+  Carrito
+  Confirmado
+  Pagado
+  Enviado
+  Entregado
+  Cancelado
+}
+
+enum TipoNotificacion {
+  push
+  email
+  sms
+}
+
+enum TipoDescuento {
+  porcentaje
+  fijo
+}
+
+enum EstadoReclamo {
+  Abierto
+  En_revision
+  Resuelto
+}
+
+model Usuario {
+  id_usuario                     Int      @id @default(autoincrement())
+  nombre_completo                String
+  correo                         String   @unique
+  contrasena_hash                String
+  telefono                       String?
+  fecha_registro                 DateTime @default(now())
+  correo_verificado              Boolean  @default(false)
+  intentos_fallidos_login        Int      @default(0)
+  bloqueado_hasta                DateTime?
+  mfa_secreto                    String?
+  token_recuperacion             String?
+  expiracion_token_recuperacion  DateTime?
+  activo                         Boolean  @default(true)
+
+  sesiones              Sesion[]
+  direcciones           DireccionUsuario[]
+  negocios              Negocio[]
+  solicitudes           Solicitud[]
+  resenas               Resena[]
+  mensajes              Mensaje[]
+  notificaciones        Notificacion[]
+  pedidos               Pedido[]
+  favorito_items        FavoritoItem[]
+  favorito_negocios     FavoritoNegocio[]
+  reclamos              Reclamo[]
+  logs                  LogAuditoria[]
+  usuario_roles         UsuarioRol[]
+  cupones_aplicados     CuponAplicado[]
+  historial_estados     HistorialEstadoSolicitud[]
+
+  @@map("USUARIO")
+}
+
+model Sesion {
+  id_sesion     Int      @id @default(autoincrement())
+  id_usuario    Int
+  refresh_token String   @unique
+  dispositivo   String?
+  direccion_ip  String?
+  creado_en     DateTime @default(now())
+  expira_en     DateTime
+  revocado      Boolean  @default(false)
+
+  usuario       Usuario  @relation(fields: [id_usuario], references: [id_usuario])
+
+  @@map("SESION")
+}
+
+model DireccionUsuario {
+  id_direccion   Int      @id @default(autoincrement())
+  id_usuario     Int
+  alias          String?
+  calle          String
+  ciudad         String
+  codigo_postal  String?
+  latitud        Float?
+  longitud       Float?
+  es_principal   Boolean  @default(false)
+
+  usuario        Usuario  @relation(fields: [id_usuario], references: [id_usuario])
+
+  @@map("DIRECCION_USUARIO")
+}
+
+model Negocio {
+  id_negocio              Int         @id @default(autoincrement())
+  id_usuario              Int
+  nombre_negocio          String
+  descripcion             String?
+  cedula_juridica_fisica  String?
+  estado_kyc              EstadoKyc   @default(Pendiente)
+  url_documento_identidad String?
+  fecha_auditoria_kyc     DateTime?
+  direccion_fisica        String?
+  latitud                 Float?
+  longitud                Float?
+  calificacion_promedio   Float?      @default(0)
+  activo                  Boolean     @default(true)
+
+  usuario              Usuario             @relation(fields: [id_usuario], references: [id_usuario])
+  items                ServicioProducto[]
+  resenas              Resena[]
+  imagenes             Imagen[]
+  horarios             HorarioNegocio[]
+  favorito_negocios    FavoritoNegocio[]
+  categorias           NegocioCategoria[]
+
+  @@map("NEGOCIO")
+}
+
+model Categoria {
+  id_categoria       Int       @id @default(autoincrement())
+  id_categoria_padre Int?
+  nombre_categoria   String
+  slug               String    @unique
+
+  padre            Categoria?          @relation("CategoriaPadre", fields: [id_categoria_padre], references: [id_categoria])
+  subcategorias    Categoria[]         @relation("CategoriaPadre")
+  items            ServicioProducto[]
+  negocios         NegocioCategoria[]
+
+  @@map("CATEGORIA")
+}
+
+model ServicioProducto {
+  id_item        Int          @id @default(autoincrement())
+  id_negocio     Int
+  id_categoria   Int
+  tipo           TipoItem
+  nombre         String
+  descripcion    String?
+  precio_base    Decimal
+  activo         Boolean      @default(true)
+  fecha_creacion DateTime     @default(now())
+
+  negocio          Negocio          @relation(fields: [id_negocio], references: [id_negocio])
+  categoria        Categoria        @relation(fields: [id_categoria], references: [id_categoria])
+  imagenes         Imagen[]
+  variaciones      Variacion[]
+  item_variaciones ItemVariacion[]
+  favoritos        FavoritoItem[]
+  solicitudes      Solicitud[]
+
+  @@map("SERVICIO_PRODUCTO")
+}
+
+model Solicitud {
+  id_solicitud      Int              @id @default(autoincrement())
+  id_consumidor     Int
+  id_item           Int
+  id_pedido         Int?
+  id_variacion      Int?
+  estado            EstadoSolicitud  @default(Pendiente)
+  fecha_solicitud   DateTime         @default(now())
+  precio_final      Decimal?
+
+  consumidor        Usuario            @relation(fields: [id_consumidor], references: [id_usuario])
+  item              ServicioProducto   @relation(fields: [id_item], references: [id_item])
+  pedido            Pedido?            @relation(fields: [id_pedido], references: [id_pedido])
+  variacion         Variacion?         @relation(fields: [id_variacion], references: [id_variacion])
+  resena            Resena?
+  mensajes          Mensaje[]
+  historial_estados HistorialEstadoSolicitud[]
+  transaccion       Transaccion?
+  reclamo           Reclamo?
+
+  @@map("SOLICITUD")
+}
+
+model Resena {
+  id_resena     Int      @id @default(autoincrement())
+  id_solicitud  Int      @unique
+  id_autor      Int
+  id_negocio    Int
+  puntuacion    Int
+  comentario    String?
+  fecha_resena  DateTime @default(now())
+
+  solicitud     Solicitud @relation(fields: [id_solicitud], references: [id_solicitud])
+  autor         Usuario   @relation(fields: [id_autor], references: [id_usuario])
+  negocio       Negocio   @relation(fields: [id_negocio], references: [id_negocio])
+
+  @@map("RESENA")
+}
+
+model Transaccion {
+  id_transaccion     Int               @id @default(autoincrement())
+  id_solicitud       Int?              @unique
+  id_pedido          Int?
+  pasarela           String
+  id_pago_externo    String?
+  monto              Decimal
+  moneda             String            @default("USD")
+  estado             EstadoTransaccion @default(Pendiente)
+  comision_plataforma Decimal?
+  fecha_transaccion  DateTime          @default(now())
+
+  solicitud          Solicitud?        @relation(fields: [id_solicitud], references: [id_solicitud])
+  pedido             Pedido?           @relation(fields: [id_pedido], references: [id_pedido])
+
+  @@map("TRANSACCION")
+}
+
+model Mensaje {
+  id_mensaje    Int      @id @default(autoincrement())
+  id_solicitud  Int
+  id_remitente  Int
+  contenido     String
+  fecha_envio   DateTime @default(now())
+  leido         Boolean  @default(false)
+
+  solicitud     Solicitud @relation(fields: [id_solicitud], references: [id_solicitud])
+  remitente     Usuario   @relation(fields: [id_remitente], references: [id_usuario])
+
+  @@map("MENSAJE")
+}
+
+model Notificacion {
+  id_notificacion Int      @id @default(autoincrement())
+  id_usuario      Int
+  tipo            TipoNotificacion
+  titulo          String
+  mensaje         String
+  leida           Boolean  @default(false)
+  fecha_creacion  DateTime @default(now())
+  url_destino     String?
+
+  usuario         Usuario  @relation(fields: [id_usuario], references: [id_usuario])
+
+  @@map("NOTIFICACION")
+}
+
+model HistorialEstadoSolicitud {
+  id_historial           Int              @id @default(autoincrement())
+  id_solicitud           Int
+  estado_anterior        EstadoSolicitud?
+  estado_nuevo           EstadoSolicitud
+  id_usuario_responsable Int
+  fecha_cambio           DateTime         @default(now())
+  comentario             String?
+
+  solicitud              Solicitud        @relation(fields: [id_solicitud], references: [id_solicitud])
+  responsable            Usuario          @relation(fields: [id_usuario_responsable], references: [id_usuario])
+
+  @@map("HISTORIAL_ESTADO_SOLICITUD")
+}
+
+model Imagen {
+  id_imagen      Int      @id @default(autoincrement())
+  url            String
+  orden          Int      @default(0)
+  es_principal   Boolean  @default(false)
+  id_negocio     Int?
+  id_item        Int?
+
+  negocio        Negocio?             @relation(fields: [id_negocio], references: [id_negocio])
+  item           ServicioProducto?    @relation(fields: [id_item], references: [id_item])
+
+  @@map("IMAGEN")
+}
+
+model HorarioNegocio {
+  id_horario     Int      @id @default(autoincrement())
+  id_negocio     Int
+  dia_semana     Int
+  hora_apertura  String?  // HH:MM
+  hora_cierre    String?  // HH:MM
+  cerrado        Boolean  @default(false)
+
+  negocio        Negocio  @relation(fields: [id_negocio], references: [id_negocio])
+
+  @@map("HORARIO_NEGOCIO")
+}
+
+model Pedido {
+  id_pedido       Int           @id @default(autoincrement())
+  id_consumidor   Int
+  estado          EstadoPedido  @default(Carrito)
+  subtotal        Decimal
+  descuento_total Decimal
+  total           Decimal
+  fecha_creacion  DateTime      @default(now())
+
+  consumidor      Usuario       @relation(fields: [id_consumidor], references: [id_usuario])
+  solicitudes     Solicitud[]
+  transacciones   Transaccion[]
+  cupones_aplicados CuponAplicado[]
+
+  @@map("PEDIDO")
+}
+
+model Variacion {
+  id_variacion    Int      @id @default(autoincrement())
+  id_item         Int
+  nombre          String
+  valor           String
+  sobreprecio     Decimal
+
+  item            ServicioProducto @relation(fields: [id_item], references: [id_item])
+  item_variaciones ItemVariacion[]
+  solicitudes     Solicitud[]
+
+  @@map("VARIACION")
+}
+
+model ItemVariacion {
+  id_item_variacion Int      @id @default(autoincrement())
+  id_item           Int
+  id_variacion      Int
+  stock             Int      @default(0)
+  sku               String?  @unique
+
+  item              ServicioProducto @relation(fields: [id_item], references: [id_item])
+  variacion         Variacion        @relation(fields: [id_variacion], references: [id_variacion])
+
+  @@unique([id_item, id_variacion])
+  @@map("ITEM_VARIACION")
+}
+
+model Cupon {
+  id_cupon           Int           @id @default(autoincrement())
+  codigo             String        @unique
+  tipo_descuento     TipoDescuento
+  valor              Decimal
+  fecha_inicio       DateTime
+  fecha_fin          DateTime
+  usos_maximos       Int?
+  usos_actuales      Int           @default(0)
+  monto_minimo_compra Decimal?
+  activo             Boolean       @default(true)
+
+  aplicaciones       CuponAplicado[]
+
+  @@map("CUPON")
+}
+
+model CuponAplicado {
+  id_cupon_aplicado Int      @id @default(autoincrement())
+  id_cupon          Int
+  id_pedido         Int
+  id_usuario        Int
+  monto_descontado  Decimal
+  fecha_aplicacion  DateTime @default(now())
+
+  cupon             Cupon    @relation(fields: [id_cupon], references: [id_cupon])
+  pedido            Pedido   @relation(fields: [id_pedido], references: [id_pedido])
+  usuario           Usuario  @relation(fields: [id_usuario], references: [id_usuario])
+
+  @@map("CUPON_APLICADO")
+}
+
+model FavoritoItem {
+  id_favorito_item Int      @id @default(autoincrement())
+  id_usuario       Int
+  id_item          Int
+  fecha_agregado   DateTime @default(now())
+
+  usuario          Usuario  @relation(fields: [id_usuario], references: [id_usuario])
+  item             ServicioProducto @relation(fields: [id_item], references: [id_item])
+
+  @@unique([id_usuario, id_item])
+  @@map("FAVORITO_ITEM")
+}
+
+model FavoritoNegocio {
+  id_favorito_negocio Int      @id @default(autoincrement())
+  id_usuario          Int
+  id_negocio          Int
+  fecha_agregado      DateTime @default(now())
+
+  usuario             Usuario  @relation(fields: [id_usuario], references: [id_usuario])
+  negocio             Negocio  @relation(fields: [id_negocio], references: [id_negocio])
+
+  @@unique([id_usuario, id_negocio])
+  @@map("FAVORITO_NEGOCIO")
+}
+
+model Reclamo {
+  id_reclamo       Int           @id @default(autoincrement())
+  id_solicitud     Int           @unique
+  id_usuario       Int
+  motivo           String
+  estado           EstadoReclamo @default(Abierto)
+  fecha_creacion   DateTime      @default(now())
+  resolucion       String?
+  fecha_resolucion DateTime?
+
+  solicitud        Solicitud     @relation(fields: [id_solicitud], references: [id_solicitud])
+  usuario          Usuario       @relation(fields: [id_usuario], references: [id_usuario])
+
+  @@map("RECLAMO")
+}
+
+model Rol {
+  id_rol       Int      @id @default(autoincrement())
+  nombre       String   @unique
+
+  usuario_roles UsuarioRol[]
+  rol_permisos  RolPermiso[]
+
+  @@map("ROL")
+}
+
+model Permiso {
+  id_permiso   Int      @id @default(autoincrement())
+  nombre       String   @unique
+
+  rol_permisos RolPermiso[]
+
+  @@map("PERMISO")
+}
+
+model UsuarioRol {
+  id_usuario   Int
+  id_rol       Int
+
+  usuario      Usuario @relation(fields: [id_usuario], references: [id_usuario])
+  rol          Rol     @relation(fields: [id_rol], references: [id_rol])
+
+  @@id([id_usuario, id_rol])
+  @@map("USUARIO_ROL")
+}
+
+model RolPermiso {
+  id_rol       Int
+  id_permiso   Int
+
+  rol          Rol     @relation(fields: [id_rol], references: [id_rol])
+  permiso      Permiso @relation(fields: [id_permiso], references: [id_permiso])
+
+  @@id([id_rol, id_permiso])
+  @@map("ROL_PERMISO")
+}
+
+model LogAuditoria {
+  id_log          Int      @id @default(autoincrement())
+  id_usuario      Int
+  accion          String
+  entidad_afectada String?
+  id_entidad      Int?
+  detalles        String?
+  direccion_ip    String?
+  fecha           DateTime @default(now())
+
+  usuario         Usuario  @relation(fields: [id_usuario], references: [id_usuario])
+
+  @@map("LOG_AUDITORIA")
+}
+
+model NegocioCategoria {
+  id_negocio   Int
+  id_categoria Int
+
+  negocio      Negocio  @relation(fields: [id_negocio], references: [id_negocio])
+  categoria    Categoria @relation(fields: [id_categoria], references: [id_categoria])
+
+  @@id([id_negocio, id_categoria])
+  @@map("NEGOCIO_CATEGORIA")
+}
