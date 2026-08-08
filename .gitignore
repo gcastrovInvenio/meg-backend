@@ -15,7 +15,6 @@ dev.db
 # deps
 node_modules/
 .wrangler
-package-lock.json
 
 # env
 .env
