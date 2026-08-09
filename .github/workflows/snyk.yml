@@ -30,18 +30,21 @@ jobs:
           node-version: 24
           cache: npm
 
+      - name: Setup Snyk CLI
+        uses: snyk/actions/setup@v0
+
       - name: Snyk - Dependencias npm
         id: snyk-deps
-        uses: snyk/actions/node@v0
-        with:
-          args: --severity-threshold=high --json-file-output=snyk-deps-report.json
+        shell: bash
+        run: |
+          snyk test --severity-threshold=high --json > snyk-deps-report.json
 
       - name: Snyk - Codigo (SAST)
         id: snyk-code
         if: always()
-        uses: snyk/actions/code@v0
-        with:
-          args: --severity-threshold=high --json-file-output=snyk-code-report.json
+        shell: bash
+        run: |
+          snyk code test --severity-threshold=high --json > snyk-code-report.json
 
       - name: Generar resumen Snyk
         if: always()
