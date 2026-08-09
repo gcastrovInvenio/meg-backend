@@ -14,14 +14,13 @@
    npm install
    ```
 
-2. Crear el archivo `.env` en la raíz:
+2. Crear el archivo `.dev.vars` en la raíz (no se versiona; `.gitignore` lo excluye):
 
    ```bash
-   DATABASE_URL="file:./dev.db"
    JWT_SECRET="<genera-un-secreto-aleatorio>"
-   JWT_EXPIRES_IN="15m"
-   REFRESH_TOKEN_TTL="30d"
    ```
+
+   `JWT_SECRET` es un secreto: se inyecta como binding de secretos de Wrangler y nunca debe quedar en un archivo versionado. El resto de la configuración no sensible (`JWT_EXPIRES_IN`, `REFRESH_TOKEN_TTL`, `DATABASE_URL`) ya viene en `wrangler.jsonc`.
 
 3. Aplicar las migraciones a la base de datos local (D1):
 
@@ -39,6 +38,14 @@
 
 - Aplicar migraciones a la base remota: `npm run cloudflare-db-remote`
 - Desplegar a Cloudflare Workers: `npm run deploy`
+
+  > **Antes del primer deploy**, inyecta el secreto en producción (los bindings de secretos no viajan en el repo ni en el deploy):
+  >
+  > ```bash
+  > wrangler secret put JWT_SECRET
+  > ```
+  >
+  > Sin él, los endpoints de autenticación fallan de forma cerrada (no emiten ni validan tokens).
 - Generar/sincronizar los tipos de tu configuración de Worker: `npm run cf-typegen`
 
    ```ts

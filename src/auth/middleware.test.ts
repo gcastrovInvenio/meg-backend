@@ -75,6 +75,22 @@ describe("requireAuth", () => {
 
 		expect(res.status).toBe(401);
 	});
+
+	it("no acepta un token válido si falta JWT_SECRET (falla cerrada)", async () => {
+		const token = await signAccessToken(testEnv, 42);
+		const app = makeApp();
+
+		const res = await app.request(
+			"/protected",
+			{ headers: { Authorization: `Bearer ${token}` } },
+			{ ...testEnv, JWT_SECRET: undefined as unknown as string },
+		);
+
+		expect(res.status).toBe(401);
+		expect(await res.json()).toEqual({
+			error: "Token inválido o expirado",
+		});
+	});
 });
 
 describe("requireAdmin", () => {
@@ -160,5 +176,22 @@ describe("requireAdmin", () => {
 		expect(await res.json()).toEqual({
 			error: "Token inválido o expirado",
 		});
+	});
+
+	it("no acepta un token válido si falta JWT_SECRET (falla cerrada)", async () => {
+		const token = await signAccessToken(testEnv, 42);
+		const app = makeApp(db);
+
+		const res = await app.request(
+			"/admin",
+			{ headers: { Authorization: `Bearer ${token}` } },
+			{ ...testEnv, JWT_SECRET: undefined as unknown as string },
+		);
+
+		expect(res.status).toBe(401);
+		expect(await res.json()).toEqual({
+			error: "Token inválido o expirado",
+		});
+		expect(db.usuarioRol.findFirst).not.toHaveBeenCalled();
 	});
 });

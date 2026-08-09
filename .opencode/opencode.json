@@ -1,0 +1,17 @@
+{
+	"$schema": "https://opencode.ai/config.json",
+	"skills": {
+		"paths": [
+			".opencode/plugins/better-toolkits/toolkits/aaarrr-flywheel-toolkit/skills",
+			".opencode/plugins/better-toolkits/toolkits/app-gtm-release-toolkit/skills",
+			".opencode/plugins/better-toolkits/toolkits/atomic-design-toolkit/skills",
+			".opencode/plugins/better-toolkits/toolkits/business-model-toolkit/skills",
+			".opencode/plugins/better-toolkits/toolkits/fractional-cto-toolkit/skills",
+			".opencode/plugins/better-toolkits/toolkits/instructional-design-toolkit/skills",
+			".opencode/plugins/better-toolkits/toolkits/launchpad-toolkit/skills",
+			".opencode/plugins/better-toolkits/toolkits/make-no-mistakes-toolkit/skills",
+			".opencode/plugins/better-toolkits/toolkits/ux-research-toolkit/skills",
+			".opencode/plugins/better-toolkits/toolkits/venture-studio-toolkit/skills"
+		]
+	}
+}

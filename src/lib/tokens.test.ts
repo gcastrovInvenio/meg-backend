@@ -59,6 +59,19 @@ describe("signAccessToken / verifyAccessToken", () => {
 			verifyAccessToken(alterado, testEnv.JWT_SECRET),
 		).rejects.toThrow();
 	});
+
+	it("no firma un token sin JWT_SECRET (falla cerrada)", async () => {
+		const envSinSecreto = {
+			...testEnv,
+			JWT_SECRET: undefined as unknown as string,
+		};
+		await expect(signAccessToken(envSinSecreto, 7)).rejects.toThrow();
+	});
+
+	it("no verifica un token sin JWT_SECRET (falla cerrada)", async () => {
+		const token = await signAccessToken(testEnv, 7);
+		await expect(verifyAccessToken(token, undefined)).rejects.toThrow();
+	});
 });
 
 describe("randomRefreshToken", () => {
