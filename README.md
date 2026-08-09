@@ -57,3 +57,7 @@ Después de ejecutar el anterior comando
 ## Base de datos
 
 El modelo de datos completo (entidades, relaciones, enums y restricciones) está documentado con diagramas ER en Mermaid en [`docs/database.md`](docs/database.md). La fuente de verdad del esquema es `prisma/schema.prisma`.
+
+## Seguridad
+
+El subsistema de seguridad (autenticación, sesiones, control de acceso y mitigación de amenazas) está documentado con diagramas UML en Mermaid en [`docs/security.md`](docs/security.md).
