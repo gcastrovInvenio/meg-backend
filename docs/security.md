@@ -429,6 +429,16 @@ stateDiagram-v2
 
 **Fuentes de referencia:** `src/auth/router.ts`, `src/auth/middleware.ts`, `src/lib/password.ts`, `src/lib/tokens.ts`, `src/lib/encoding.ts`, `src/types.ts`, `prisma/schema.prisma`.
 
+### 7.1 Línea base de escaneo de vulnerabilidades
+
+| Escaneo | Herramienta | Cobertura | Umbral | Bloqueante |
+|---|---|---|---|---|
+| Dependencias npm | Snyk (`snyk test`) | `package-lock.json` | alta/crítica (`--severity-threshold=high`) | Sí (CI `snyk.yml`) |
+| Código fuente (SAST) | Snyk (`snyk code test`) | `src/` | alta/crítica (`--severity-threshold=high`) | Sí (CI `snyk.yml`) |
+| Imagen de contenedor | Docker Scout (`sbom` + `cves`) | Imagen `meg-backend` | crítico/alto (`--exit-code`) | Sí (CI `docker-scout.yml`) |
+
+Ejecución local: `./vuln-scanner.sh` (genera `snyk-deps-report.txt`, `snyk-code-report.txt`, `sbom-logs.sbom`, `cves-logs.report`). Ejecución en CI: `snyk.yml` (deps + SAST, resumen como comentario en el PR) y `docker-scout.yml` (SBOM + CVEs, SARIF → code scanning).
+
 ## 8. Mitigación de amenazas: Privilege Escalation y Lateral Movement
 
 Cómo el diseño del subsistema impide dos ataques clásicos: escalada de privilegios (obtener permisos que no corresponden) y movimiento lateral (reutilizar una sesión robada para desplazarse dentro del sistema).
