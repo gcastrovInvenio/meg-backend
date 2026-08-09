@@ -11,11 +11,17 @@
 			"database_id": "dev-local",
 			"migrations_dir": "prisma/migrations",
 			"migrations_pattern": "prisma/migrations/*/migration.sql"
+		},
+		{
+		"binding": "DB remote",
+		"database_name": "meg",
+		"database_id": "724a7785-6b5d-4e40-8088-ac7c552ed690",
+		"migrations_dir": "prisma/migrations",
+		"migrations_pattern": "prisma/migrations/*/migration.sql"
 		}
 	],
 	"vars": {
 		"DATABASE_URL": "file:./dev.db",
-		"JWT_SECRET": "dev-only-secret-cambiar-en-produccion",
 		"JWT_EXPIRES_IN": "15m",
 		"REFRESH_TOKEN_TTL": "30d"
 	}
