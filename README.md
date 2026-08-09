@@ -68,3 +68,32 @@ El modelo de datos completo (entidades, relaciones, enums y restricciones) está
 ## Seguridad
 
 El subsistema de seguridad (autenticación, sesiones, control de acceso y mitigación de amenazas) está documentado con diagramas UML en Mermaid en [`docs/security.md`](docs/security.md).
+
+El playbook de pruebas de penetración (fases, herramientas, criterios de aceptación y ciclo de vida de hallazgos) está en [`docs/pentest-playbook.md`](docs/pentest-playbook.md).
+
+## Escaneo de vulnerabilidades (Snyk)
+
+El repositorio escanea vulnerabilidades con Snyk en paralelo a Docker Scout: **dependencias npm** (`snyk test`) y **código fuente** (`snyk code test`, SAST), con umbral `--severity-threshold=high`.
+
+### Local
+
+1. Instalar la CLI y autenticarse:
+
+   ```bash
+   npm install -g snyk
+   snyk auth <SNYK_TOKEN>
+   ```
+
+2. Ejecutar el escaneo (dependencias + código + imagen Docker Scout):
+
+   ```bash
+   ./vuln-scanner.sh
+   ```
+
+   Genera `snyk-deps-report.txt` y `snyk-code-report.txt` (gitignored). Si la CLI no está instalada o no hay sesión, el script falla con las instrucciones; no produce reportes vacíos.
+
+### CI
+
+El workflow `.github/workflows/snyk.yml` corre en cada PR, push a `main`, `workflow_dispatch` y semanalmente (lunes 06:00 UTC). Bloquea severidades altas/críticas y publica el resumen como comentario en el pull request.
+
+**Requisito previo:** configura el token como secreto del repositorio (Settings → Secrets → Actions → `SNYK_TOKEN`). Sin él, el workflow falla al autenticar contra Snyk. El token nunca se referencia desde archivos versionados.
