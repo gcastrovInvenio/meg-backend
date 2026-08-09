@@ -1,0 +1,131 @@
+{
+	"securityFindingTriage": {
+		"scanners": {
+			"docker-scout-sbom": {
+				"name": "Docker Scout — SBOM",
+				"tool": "Docker Scout",
+				"check": "sbom",
+				"manual": false,
+				"blocking": false,
+				"severities": [],
+				"playbookSection": "§5 (F2), §9 (F6)",
+				"workflows": [
+					{
+						"file": ".github/workflows/docker-scout.yml",
+						"jobName": "scan",
+						"step": "Docker Scout - SBOM",
+						"on": [
+							"push:main",
+							"pull_request",
+							"workflow_dispatch",
+							"schedule:cron 0 6 * * 1"
+						]
+					}
+				]
+			},
+			"docker-scout-cves": {
+				"name": "Docker Scout — CVEs",
+				"tool": "Docker Scout",
+				"check": "cves",
+				"manual": false,
+				"blocking": true,
+				"severities": ["critical", "high"],
+				"playbookSection": "§5 (F2), §9 (F6)",
+				"workflows": [
+					{
+						"file": ".github/workflows/docker-scout.yml",
+						"jobName": "scan",
+						"step": "Docker Scout - CVEs",
+						"on": [
+							"push:main",
+							"pull_request",
+							"workflow_dispatch",
+							"schedule:cron 0 6 * * 1"
+						]
+					}
+				]
+			},
+			"docker-scan-local": {
+				"name": "docker-scan.sh (local)",
+				"tool": "Docker Scout CLI",
+				"check": "sbom+cves",
+				"manual": true,
+				"blocking": false,
+				"severities": ["critical", "high"],
+				"playbookSection": "§9 (F6)",
+				"workflows": []
+			},
+			"biome": {
+				"name": "Biome",
+				"tool": "Biome",
+				"check": "lint",
+				"manual": false,
+				"blocking": true,
+				"severities": [],
+				"playbookSection": "§5 (F2)",
+				"workflows": [
+					{
+						"file": ".github/workflows/lint.yml",
+						"jobName": "lint",
+						"step": "Run linter",
+						"on": ["push:main", "pull_request"]
+					}
+				]
+			},
+			"burp": {
+				"name": "Burp Suite",
+				"tool": "Burp Suite",
+				"check": "manual-web",
+				"manual": true,
+				"blocking": false,
+				"severities": [],
+				"playbookSection": "§6–§8 (manual)",
+				"workflows": []
+			},
+			"trufflehog": {
+				"name": "trufflehog / gitleaks",
+				"tool": "trufflehog",
+				"check": "secrets",
+				"manual": true,
+				"blocking": false,
+				"severities": [],
+				"playbookSection": "§10 (F7)",
+				"workflows": [],
+				"gap": "missing automated lane (proposal: security-secrets.yml)"
+			},
+			"shannon": {
+				"name": "Shannon / Keygraph",
+				"tool": "shannon",
+				"check": "identity-secrets",
+				"manual": true,
+				"blocking": false,
+				"severities": [],
+				"playbookSection": "§11 (F8)",
+				"workflows": [],
+				"gap": "DOC-GAP-02"
+			}
+		},
+		"phaseBatch": {
+			"phase2": ["docker-scout-sbom", "docker-scout-cves", "biome"],
+			"phase7": []
+		},
+		"manualOnly": ["docker-scan-local", "burp", "trufflehog", "shannon"],
+		"na": ["testssl", "kube-bench", "kube-hunter"],
+		"gaps": {
+			"DOC-GAP-02": {
+				"title": "Shannon / Keygraph no está integrado",
+				"description": "Auditoría de secretos/identidad fuera de alcance del repo actual",
+				"status": "open"
+			},
+			"EXC-SECRETS": {
+				"title": "Lane de secretos sin automatizar",
+				"description": "trufflehog/gitleaks referenciado en playbook §10 sin workflow CI (propuesta: security-secrets.yml)",
+				"status": "open"
+			}
+		},
+		"audit": {
+			"lastPentestSetupAt": "2026-08-09T03:44:32Z",
+			"lastAuditSummary": "4 OK, 2 drift (trufflehog, securityFindingTriage), 1 manual-only (Burp), 1 DOC-GAP-02"
+		}
+	}
+}
