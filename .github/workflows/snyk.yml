@@ -1,0 +1,112 @@
+name: Snyk Security Scan
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  security-events: write
+
+jobs:
+  snyk:
+    name: Snyk (dependencias + codigo)
+    runs-on: ubuntu-latest
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Snyk - Dependencias npm
+        id: snyk-deps
+        uses: snyk/actions/node@v0
+        with:
+          args: --severity-threshold=high --json-file-output=snyk-deps-report.json
+
+      - name: Snyk - Codigo (SAST)
+        id: snyk-code
+        if: always()
+        uses: snyk/actions/code@v0
+        with:
+          args: --severity-threshold=high --json-file-output=snyk-code-report.json
+
+      - name: Generar resumen Snyk
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '<!-- snyk-scan -->'
+            echo ''
+            echo '## Snyk Security Scan'
+            echo ''
+            echo '| Tipo | Estado | Hallazgos |'
+            echo '|---|---|---|'
+            if [ -f snyk-deps-report.json ]; then
+              if [ "$(jq -r '.ok' snyk-deps-report.json 2>/dev/null)" = "true" ]; then
+                echo '| Dependencias npm | Sin vulnerabilidades altas o criticas | 0 |'
+              else
+                echo "| Dependencias npm | Hallazgos | $(jq '[.vulnerabilities[] | select(.severity == "high" or .severity == "critical")] | length' snyk-deps-report.json 2>/dev/null) |"
+              fi
+            elif [ "${{ steps.snyk-deps.outcome }}" = "success" ]; then
+              echo '| Dependencias npm | Sin vulnerabilidades altas o criticas | 0 |'
+            else
+              echo '| Dependencias npm | No ejecutado | - |'
+            fi
+            if [ -f snyk-code-report.json ]; then
+              code_vulns=$(jq '[.runs[]?.results[]?] | length' snyk-code-report.json 2>/dev/null || echo 0)
+              if [ "$code_vulns" -eq 0 ] 2>/dev/null; then
+                echo '| Codigo (SAST) | Sin vulnerabilidades altas o criticas | 0 |'
+              else
+                echo "| Codigo (SAST) | Hallazgos | $code_vulns |"
+              fi
+            elif [ "${{ steps.snyk-code.outcome }}" = "success" ]; then
+              echo '| Codigo (SAST) | Sin vulnerabilidades altas o criticas | 0 |'
+            else
+              echo '| Codigo (SAST) | No ejecutado | - |'
+            fi
+          } > snyk-summary.md
+          cat snyk-summary.md
+
+      - name: Eliminar comentario Snyk anterior
+        if: always() && github.event_name == 'pull_request'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          comment_id=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --jq '[.[] | select(.body | contains("<!-- snyk-scan -->")) | .id] | last' 2>/dev/null || true)
+          if [ -n "$comment_id" ] && [ "$comment_id" != "null" ]; then
+            echo "Eliminando comentario anterior: $comment_id"
+            gh api -X DELETE "repos/${GITHUB_REPOSITORY}/issues/comments/${comment_id}" >/dev/null || true
+          else
+            echo "Sin comentario anterior que eliminar."
+          fi
+
+      - name: Publicar resumen en el PR
+        if: always() && github.event_name == 'pull_request'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr comment "$PR_NUMBER" --body-file snyk-summary.md
+
+      - name: Subir resumen como artefacto
+        if: always() && github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: snyk-summary
+          path: snyk-summary.md
