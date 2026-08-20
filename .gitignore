@@ -39,3 +39,6 @@ lerna-debug.log*
 .DS_Store
 
 /prisma/prisma
+
+# openspec archive
+openspec/changes/archive/
