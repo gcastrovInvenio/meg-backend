@@ -37,6 +37,7 @@ export function makeUsuario(overrides: Partial<Usuario> = {}): Usuario {
 		telefono: "555-1234",
 		fecha_registro: new Date("2026-08-07T10:00:00.000Z"),
 		correo_verificado: false,
+		foto_perfil_key: null,
 		intentos_fallidos_login: 0,
 		bloqueado_hasta: null,
 		mfa_secreto: null,

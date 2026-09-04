@@ -162,7 +162,7 @@ describe("PATCH /users/me", () => {
 		expect(res.status).toBe(400);
 		expect(await res.json()).toEqual({
 			error:
-				"Debe enviar al menos un campo editable (nombre_completo o telefono)",
+				"Debe enviar al menos un campo editable (nombre_completo, telefono o foto_perfil_key)",
 		});
 		expect(db.usuario.update).not.toHaveBeenCalled();
 	});

@@ -70,7 +70,9 @@ describe("signAccessToken / verifyAccessToken", () => {
 
 	it("no verifica un token sin JWT_SECRET (falla cerrada)", async () => {
 		const token = await signAccessToken(testEnv, 7);
-		await expect(verifyAccessToken(token, undefined)).rejects.toThrow();
+		await expect(
+			verifyAccessToken(token, undefined as unknown as string),
+		).rejects.toThrow();
 	});
 });
 

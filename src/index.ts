@@ -3,6 +3,7 @@ import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import auth from "./auth/router";
 import { createPrisma } from "./lib/db";
 import type { AppEnv, AppVariables } from "./types";
+import uploads from "./uploads/router";
 import users from "./users/router";
 
 type AppEnvType = { Bindings: AppEnv; Variables: AppVariables };
@@ -39,6 +40,7 @@ app.openapi(pingRoute, (c) => c.text("Connected!", 200));
 
 app.route("/", auth);
 app.route("/", users);
+app.route("/", uploads);
 
 app.doc("/doc", {
 	openapi: "3.0.3",

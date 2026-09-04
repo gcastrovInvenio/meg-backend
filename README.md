@@ -46,6 +46,14 @@
   > ```
   >
   > Sin él, los endpoints de autenticación fallan de forma cerrada (no emiten ni validan tokens).
+
+  > **Antes del primer deploy**, crea el bucket R2 de imágenes (los buckets no viajan en el repo ni en el deploy):
+  >
+  > ```bash
+  > wrangler r2 bucket create meg-images
+  > ```
+  >
+  > El binding `IMAGES` de `wrangler.jsonc` apunta a `meg-images`. Sin el bucket, los endpoints `POST /uploads` y `GET /uploads/{key}` fallan al interactuar con R2.
 - Generar/sincronizar los tipos de tu configuración de Worker: `npm run cf-typegen`
 
    ```ts

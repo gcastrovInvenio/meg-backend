@@ -192,12 +192,19 @@ users.openapi(
 	{ ...actualizarPerfilRoute, middleware: requireAuth },
 	async (c) => {
 		const body = c.req.valid("json");
-		const data: { nombre_completo?: string; telefono?: string | null } = {};
+		const data: {
+			nombre_completo?: string;
+			telefono?: string | null;
+			foto_perfil_key?: string | null;
+		} = {};
 		if (body.nombre_completo !== undefined) {
 			data.nombre_completo = body.nombre_completo;
 		}
 		if (body.telefono !== undefined) {
 			data.telefono = body.telefono;
+		}
+		if (body.foto_perfil_key !== undefined) {
+			data.foto_perfil_key = body.foto_perfil_key;
 		}
 		const usuario = await c.get("db").usuario.update({
 			where: { id_usuario: c.get("userId") },

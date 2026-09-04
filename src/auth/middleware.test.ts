@@ -6,6 +6,8 @@ import { testEnv } from "../test/test-env";
 import type { AppEnv, AppVariables } from "../types";
 import { requireAdmin, requireAuth } from "./middleware";
 
+const WRONG_JWT_SECRET = "otro-secreto";
+
 function makeApp() {
 	const app = new Hono<{ Bindings: AppEnv; Variables: AppVariables }>();
 	app.get("/protected", requireAuth, (c) =>
@@ -63,7 +65,7 @@ describe("requireAuth", () => {
 	});
 
 	it("responde 401 con un token firmado con otro secreto", async () => {
-		const otroEnv = { ...testEnv, JWT_SECRET: "otro-secreto" };
+		const otroEnv = { ...testEnv, JWT_SECRET: WRONG_JWT_SECRET };
 		const token = await signAccessToken(otroEnv, 42);
 		const app = makeApp();
 
