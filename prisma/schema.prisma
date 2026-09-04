@@ -4,6 +4,7 @@
 generator client {
   provider = "prisma-client"
   output   = "./prisma"
+  runtime  = "workerd"
 }
 
 datasource db {
@@ -69,6 +70,7 @@ model Usuario {
   telefono                       String?
   fecha_registro                 DateTime @default(now())
   correo_verificado              Boolean  @default(false)
+  foto_perfil_key                String?
   intentos_fallidos_login        Int      @default(0)
   bloqueado_hasta                DateTime?
   mfa_secreto                    String?

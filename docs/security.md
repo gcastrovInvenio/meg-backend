@@ -435,9 +435,11 @@ stateDiagram-v2
 |---|---|---|---|---|
 | Dependencias npm | Snyk (`snyk test`) | `package-lock.json` | alta/crítica (`--severity-threshold=high`) | Sí (CI `snyk.yml`) |
 | Código fuente (SAST) | Snyk (`snyk code test`) | `src/` | alta/crítica (`--severity-threshold=high`) | Sí (CI `snyk.yml`) |
-| Imagen de contenedor | Docker Scout (`sbom` + `cves`) | Imagen `meg-backend` | crítico/alto (`--exit-code`) | Sí (CI `docker-scout.yml`) |
+| Imagen de contenedor | Docker Scout (`sbom` + `cves`) | Imagen `meg-backend`, solo paquetes npm (`--only-package-type npm`) | crítico/alto (`--exit-code`) | Sí (CI `docker-scout.yml`) |
 
 Ejecución local: `./vuln-scanner.sh` (genera `snyk-deps-report.txt`, `snyk-code-report.txt`, `sbom-logs.sbom`, `cves-logs.report`). Ejecución en CI: `snyk.yml` (deps + SAST, resumen como comentario en el PR) y `docker-scout.yml` (SBOM + CVEs, SARIF → code scanning).
+
+El escaneo de imagen de Docker Scout está restringido a paquetes npm (`--only-package-type npm` en local, `only-package-types: npm` en CI), de modo que las CVEs de `golang` (binario `tsgo` de `typescript`) y las de los paquetes del sistema/base de la imagen no aparecen en el reporte ni hacen fallar el gate. Limitación documentada: las dev dependencies npm (`typescript`, `vite`, `wrangler`, `prisma`) permanecen dentro del alcance porque la action `docker/scout-action@v1` no expone filtro fino por paquete.
 
 ## 8. Mitigación de amenazas: Privilege Escalation y Lateral Movement
 

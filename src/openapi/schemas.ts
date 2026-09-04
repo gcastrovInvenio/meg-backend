@@ -23,6 +23,7 @@ export const UsuarioPublicoSchema = z
 		telefono: z.string().nullable(),
 		correo_verificado: z.boolean(),
 		fecha_registro: z.string(),
+		foto_perfil_key: z.string().nullable(),
 	})
 	.openapi("UsuarioPublico", {
 		description: "Datos públicos del usuario (nunca incluye datos sensibles)",
@@ -105,6 +106,13 @@ export const IdParamsSchema = z.object({
 		}),
 });
 
+const FotoPerfilKeySchema = z
+	.string({ error: "Clave de foto de perfil inválida" })
+	.regex(
+		/^profile\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|webp)$/,
+		"Clave de foto de perfil inválida",
+	);
+
 export const ActualizarPerfilSchema = z
 	.object({
 		nombre_completo: z
@@ -113,13 +121,18 @@ export const ActualizarPerfilSchema = z
 			.min(1, "Falta el campo nombre_completo")
 			.optional(),
 		telefono: z.string().trim().nullish(),
+		foto_perfil_key: FotoPerfilKeySchema.nullish(),
 	})
 	.superRefine((val, ctx) => {
-		if (val.nombre_completo === undefined && val.telefono === undefined) {
+		if (
+			val.nombre_completo === undefined &&
+			val.telefono === undefined &&
+			val.foto_perfil_key === undefined
+		) {
 			ctx.addIssue({
 				code: "custom",
 				message:
-					"Debe enviar al menos un campo editable (nombre_completo o telefono)",
+					"Debe enviar al menos un campo editable (nombre_completo, telefono o foto_perfil_key)",
 			});
 		}
 	})
@@ -139,3 +152,48 @@ export const CambioContrasenaSchema = z
 	.openapi("CambioContrasena", {
 		description: "Cambio de contraseña del usuario",
 	});
+
+export const UploadQuerySchema = z
+	.object({
+		category: z
+			.string()
+			.optional()
+			.openapi({
+				param: { name: "category", in: "query" },
+				description:
+					"Categoría de la imagen. Determina la carpeta en R2 (profile, cedula, cedula-juridica)",
+				example: "profile",
+			}),
+	})
+	.openapi("UploadQuery", { description: "Categoría del archivo a subir" });
+
+export const UploadRequestSchema = z
+	.object({
+		file: z.any().openapi({
+			type: "string",
+			format: "binary",
+			description: "Archivo de imagen (JPEG, PNG o WebP, máximo 10MB)",
+		}),
+	})
+	.openapi("UploadRequest", {
+		description: "Archivo multipart/form-data a subir a R2",
+	});
+
+export const UploadResponseSchema = z
+	.object({
+		key: z.string(),
+	})
+	.openapi("UploadResponse", {
+		description: "Clave del objeto almacenado en R2",
+	});
+
+export const UploadKeyParamsSchema = z.object({
+	key: z
+		.string()
+		.min(1)
+		.openapi({
+			param: { name: "key", in: "path" },
+			description: "Clave del objeto en R2",
+			example: "profile/abc123.jpg",
+		}),
+});

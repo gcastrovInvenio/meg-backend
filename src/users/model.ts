@@ -8,5 +8,6 @@ export function usuarioPublico(usuario: Usuario) {
 		telefono: usuario.telefono,
 		correo_verificado: usuario.correo_verificado,
 		fecha_registro: usuario.fecha_registro,
+		foto_perfil_key: usuario.foto_perfil_key,
 	};
 }

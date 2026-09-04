@@ -15,11 +15,19 @@ El sistema SHALL permitir a un usuario autenticado consultar sus propios datos p
 - **THEN** el sistema responde `401` con un error "No autenticado"
 
 ### Requirement: Actualizar el perfil propio
-El sistema SHALL permitir a un usuario autenticado actualizar los campos editables de su propio perfil (`nombre_completo`, `telefono`) mediante `PATCH /users/me`, validando que el cuerpo no esté vacío y que los valores cumplan las reglas de formato, y devolver el perfil actualizado.
+El sistema SHALL permitir a un usuario autenticado actualizar los campos editables de su propio perfil (`nombre_completo`, `telefono`, `foto_perfil_key`) mediante `PATCH /users/me`, validando que el cuerpo no esté vacío y que los valores cumplan las reglas de formato, y devolver el perfil actualizado. El campo `foto_perfil_key` es opcional y debe ser una clave válida de R2 (retornada por `POST /uploads?category=profile`).
 
 #### Scenario: Actualización exitosa
 - **WHEN** un usuario autenticado envía `PATCH /users/me` con valores válidos para `nombre_completo` y/o `telefono`
 - **THEN** el sistema actualiza solo los campos provistos, conserva el resto, y responde `200` con el perfil público actualizado
+
+#### Scenario: Actualizar foto de perfil
+- **WHEN** un usuario autenticado envía `PATCH /users/me` con `foto_perfil_key: "profile/abc123.jpg"`
+- **THEN** el sistema actualiza el campo `foto_perfil_key` y responde `200` con el perfil actualizado incluyendo la nueva clave
+
+#### Scenario: Foto de perfil con clave inválida
+- **WHEN** un usuario envía `PATCH /users/me` con `foto_perfil_key` que no sigue el formato `profile/<uuid>.<ext>`
+- **THEN** el sistema responde `400` con `{ "error": "Clave de foto de perfil inválida" }`
 
 #### Scenario: Cuerpo inválido
 - **WHEN** el usuario envía `PATCH /users/me` con un cuerpo sin campos editables válidos (vacío o solo campos no permitidos)

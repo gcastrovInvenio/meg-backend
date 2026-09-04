@@ -3,7 +3,7 @@
 ## Purpose
 Establece que los secretos de firma, en particular `JWT_SECRET`, se inyecten al Worker como binding de secretos en tiempo de despliegue y nunca se versionen ni tengan valor por defecto, garantizando que no exista material de firma conocido por el repositorio (hallazgo H-1 del pentest).
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: JWT_SECRET provisto como secreto no versionado
 El sistema SHALL obtener `JWT_SECRET` exclusivamente de un binding de secretos de la plataforma (p. ej. `wrangler secret put JWT_SECRET`), y SHALL NOT depender de ningún valor en archivos versionados (`wrangler.jsonc`, `.env`, código) ni contener un valor por defecto.
