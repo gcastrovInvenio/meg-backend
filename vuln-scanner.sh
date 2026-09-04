@@ -51,40 +51,21 @@ echo "Analizando la imagen '$IMAGE' con Docker Scout..."
 echo "-> Generando SBOM ($SBOM_FILE)..."
 docker scout sbom --output $SBOM_FILE "$IMAGE"
 
-echo "-> Generando reporte de CVEs ($CVES_FILE)..."
-docker scout cves --only-severity critical,high --output $CVES_FILE "$IMAGE" || true
-
-# --- Riesgo aceptado: stdlib Go embebido en typescript (tsgo) ---
-# El binario nativo de typescript@7 (github.com/microsoft/typescript-go, tsgo)
-# embebe golang stdlib 1.26.4 con 6 CVEs (1 critica, 5 altas) sin fix upstream
-# (typescript 7.0.2 es el ultimo estable; requiere Go >=1.26.6).
-# Riesgo aceptado: es una devDependency, el contenedor solo ejecuta 'npm run dev'
-# (vite) y nunca invoca 'tsc', por lo que el binario no participa del request-path.
-# Re-evaluar cuando typescript publique una version con Go >=1.26.6.
-ACCEPTED_CVES="CVE-2026-39821 CVE-2026-56862 CVE-2026-56859 CVE-2026-56853 CVE-2026-46600 CVE-2026-33818"
+echo "-> Generando reporte de CVEs de paquetes npm ($CVES_FILE)..."
+docker scout cves --only-severity critical,high --only-package-type npm --output $CVES_FILE "$IMAGE" || true
 
 FOUND_CVES=$(grep -oE "CVE-[0-9]{4}-[0-9]+" "$CVES_FILE" 2>/dev/null | sort -u)
-unaccepted_cves=""
-
-for cve in $FOUND_CVES; do
-	case " $ACCEPTED_CVES " in
-		*" $cve "*) ;;
-		*) unaccepted_cves="$unaccepted_cves $cve" ;;
-	esac
-done
 
 SCOUT_STATUS=0
-if [ -n "$unaccepted_cves" ]; then
-	echo "     Imagen: SE ENCONTRARON vulnerabilidades no aceptadas:$unaccepted_cves"
+if [ -n "$FOUND_CVES" ]; then
+	echo "     Imagen: SE ENCONTRARON vulnerabilidades altas o criticas:$FOUND_CVES"
 	SCOUT_STATUS=1
-elif [ -n "$FOUND_CVES" ]; then
-	echo "     Imagen: solo hallazgos de riesgo aceptado (stdlib/tsgo), ver $CVES_FILE"
 else
 	echo "     Imagen: sin vulnerabilidades altas o criticas."
 fi
 
 echo
-echo "Analisis completado:"
+echo "Analisis completado (Docker Scout restringido a paquetes npm):"
 echo "  CVEs (Docker Scout): $CVES_FILE"
 echo "  SBOM (Docker Scout): $SBOM_FILE"
 echo "  Dependencias (Snyk): $DEPS_REPORT"

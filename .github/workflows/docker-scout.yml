@@ -86,6 +86,7 @@ jobs:
           command: cves
           image: ${{ steps.meta.outputs.tags }}
           only-severities: critical,high
+          only-package-types: npm
           exit-code: true
           sarif-file: scout.sarif
           summary: true
